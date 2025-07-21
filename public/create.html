@@ -11,23 +11,30 @@
   <form method="POST" action="/submit"
         class="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full max-w-md space-y-4"
         onsubmit="showLoading()">
+  
+    
 
+    <div class="flex flex-col gap-16">
+<div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-4">
     <h2 class="text-2xl font-bold text-center">สร้างรายการใหม่</h2>
 
-    <input name="title" required type="text" placeholder="หัวข้อการซื้อ"
-           class="w-full px-4 py-2 border rounded" />
+        <input name="title" required type="text" placeholder="หัวข้อการซื้อ"
+              class="w-full px-4 py-2 border rounded" />
 
-    <input name="creditor" required type="text" placeholder="ชื่อเจ้าหนี้"
-           class="w-full px-4 py-2 border rounded" />
+        <input name="creditor" required type="text" placeholder="ชื่อเจ้าหนี้"
+              class="w-full px-4 py-2 border rounded" />
 
-    <input name="payer" required type="text" placeholder="ชื่อเพื่อน"
-           class="w-full px-4 py-2 border rounded" />
+        <input name="payer" required type="text" placeholder="ชื่อเพื่อน"
+              class="w-full px-4 py-2 border rounded" />
 
-    <textarea name="description" placeholder="รายละเอียด"
-              class="w-full px-4 py-2 border rounded"></textarea>
+        <textarea name="description" placeholder="รายละเอียด"
+                  class="w-full px-4 py-2 border rounded"></textarea>
 
-    <input name="amount" required type="number" placeholder="จำนวนเงิน (บาท)"
-           class="w-full px-4 py-2 border rounded" />
+        <input name="amount" required type="number" placeholder="จำนวนเงิน (บาท)"
+              class="w-full px-4 py-2 border rounded" />
+  </div>
+    
 
     <div>
       <p class="font-semibold mb-1">PromptPay</p>
@@ -43,10 +50,12 @@
       </div>
     </div>
 
+    </div>
     <button type="submit"
             class="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700">
       บันทึกรายการ
     </button>
+    </div>
   </form>
 
   <!-- หน้ารอโหลด -->
