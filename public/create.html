@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>สร้างรายการใหม่</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+  <form method="POST" action="/submit" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md space-y-4" onsubmit="showLoading()">
+    <h2 class="text-2xl font-bold mb-2 text-center">สร้างรายการใหม่</h2>
+
+    <input name="title" required type="text" placeholder="หัวข้อการซื้อ" class="w-full px-4 py-2 border rounded" />
+    <input name="creditor" required type="text" placeholder="ชื่อเจ้าหนี้" class="w-full px-4 py-2 border rounded" />
+    <input name="payer" required type="text" placeholder="ชื่อเพื่อน" class="w-full px-4 py-2 border rounded" />
+    
+    <textarea name="description" placeholder="รายละเอียด" class="w-full px-4 py-2 border rounded"></textarea>
+    <input name="amount" required type="number" placeholder="จำนวนเงิน (บาท)" class="w-full px-4 py-2 border rounded" />
+    <p>PromptPay</p>
+    <input required type="radio" name="phone_number" value="0648674958" id="phone_number1"> <label for="phone_number1">0648674958</label>
+    <input required type="radio" name="phone_number" value="0933891098" id="phone_number2"> <label for="phone_number2">0933891098</label>
+    <button type="submit" class="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700">บันทึกรายการ</button>
+  </form>
+
+  <!-- หน้ารอโหลด -->
+  <div id="loading" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden">
+    <div class="bg-white px-6 py-4 rounded-lg shadow-lg text-center">
+      <p class="text-lg font-semibold">กำลังบันทึก...</p>
+    </div>
+  </div>
+
+  <script>
+    function showLoading() {
+      document.getElementById("loading").classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>

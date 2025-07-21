@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <title>รายการทั้งหมด</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen p-6">
+    <a href="/confirm.html" class="text-blue-600 underline ml-4">📥 รายการรอยืนยัน</a>
+
+    <h1 class="text-2xl font-bold text-center mb-6">รายการที่สร้างไว้</h1>
+    <div class="text-center mb-6">
+      <a
+        href="/create.html"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >➕ สร้างรายการใหม่</a
+      >
+    </div>
+
+    <div id="list" class="space-y-4 max-w-xl mx-auto text-gray-800"></div>
+
+    <!-- Loading Overlay -->
+    <div
+      id="loading"
+      class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50"
+    >
+      <div class="bg-white px-6 py-4 rounded-lg shadow-lg text-center">
+        <p class="text-lg font-semibold">กำลังโหลดข้อมูล...</p>
+      </div>
+    </div>
+
+    <script>
+      function showLoading() {
+        document.getElementById("loading").classList.remove("hidden");
+      }
+
+      function hideLoading() {
+        document.getElementById("loading").classList.add("hidden");
+      }
+
+      async function loadData() {
+        showLoading();
+        try {
+          const res = await fetch("/api/list");
+          const data = await res.json();
+          const container = document.getElementById("list");
+
+          globalData = data; // ✅ เก็บไว้ให้ใช้ภายหลัง เช่นใน toggleQR
+
+          if (data.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-500">ไม่มีรายการ</p>`;
+          } else {
+            data.forEach((item, index) => {
+              if (item.is_verify === false) {
+                const div = document.createElement("div");
+                div.className = "bg-white p-4 shadow rounded";
+                div.id = index
+
+
+                div.innerHTML = `
+            <p><strong>หัวข้อ:</strong> ${item.title}</p>
+            <p><strong>ชื่อเจ้าหนี้:</strong> ${item.creditor}</p>
+            <p><strong>ชื่อคนที่ยืม:</strong> ${item.payer}</p>
+            <p><strong>รายละเอียด:</strong> ${item.description}</p>
+            <p><strong>จำนวนเงิน:</strong> ${item.amount} บาท</p>
+            <p><strong>เบอร์ Promtpay:</strong> ${item.phone_number} </p>
+            <button onclick="toggleQR(${index})" class="mt-2 text-blue-600 underline">แสดง QR Code</button>
+            <div id="qr-${index}" class="hidden mt-2 w-32 h-32 border border-dashed flex items-center justify-center text-gray-400">QR MOCK</div>
+            <input type="file" accept="image/*" class="mt-2" onchange="uploadSlip(event, ${index})" />
+            <div id="slip-${index}" class="mt-2"></div>
+            <img src="${item.slip_url}" class="max-w-xs border rounded" />
+            <button onclick="confirmSlip(${index})" class="mt-2 bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
+              ✅ โอนก่อนกดยืนยัน
+            </button>
+
+          `;
+                container.appendChild(div);
+              }
+            });
+          }
+        } catch (err) {
+          alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+          console.error(err);
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function uploadSlip(event, index) {
+        const file = event.target.files[0];
+        const el = document.getElementById(`slip-${index}`);
+        el.innerHTML = "กำลังอัปโหลด...";
+
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("slip", file);
+        formData.append("id", globalData[index].uuid); // ต้องมี id จากรายการ
+
+        try {
+          const res = await fetch("/api/upload-slip", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) throw new Error("อัปโหลดล้มเหลว");
+
+          const result = await res.json();
+          globalData[index].slip_url = result.slip_url;
+
+          el.innerHTML = `<img src="${result.slip_url}" class="max-w-xs border rounded" alt="slip" />`;
+        } catch (err) {
+          el.innerHTML = `<span class="text-red-500">❌ ไม่สามารถอัปโหลดสลิป</span>`;
+        }
+      }
+
+      async function confirmSlip(index) {
+        console.log(globalData[index].uuid)
+        const id = globalData[index].uuid;
+
+        try {
+
+          const res = await fetch("/api/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+
+          if (!res.ok) throw new Error("ยืนยันไม่สำเร็จ");
+
+          document.getElementById(index).remove();
+          alert("✅ ยืนยันเรียบร้อย");
+          // loadData(); // โหลดใหม่เพื่ออัปเดต
+        } catch (err) {
+          alert("❌ ยืนยันไม่สำเร็จ");
+        }
+      }
+
+      async function toggleQR(index) {
+        const el = document.getElementById(`qr-${index}`);
+        if (!el.classList.contains("hidden")) {
+          el.classList.add("hidden");
+          el.innerHTML = "";
+        } else {
+          el.classList.remove("hidden");
+          el.innerHTML = "";
+
+          const amount = globalData[index].amount;
+          const phone_number = globalData[index].phone_number
+          console.log(phone_number)
+          try {
+            const res = await fetch("/api/qrcode", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ amount, phone_number }),
+            });
+
+            if (!res.ok) {
+              const errData = await res.json();
+              el.innerHTML = `<span class="text-red-500">❌ สร้าง QR ไม่สำเร็จ: ${
+                errData?.error || "ไม่ทราบสาเหตุ"
+              }</span>`;
+              return;
+            }
+
+            const data = await res.json();
+
+            const img = document.createElement("img");
+            img.src = data.result; // ใช้ field `result` จาก backend ที่คุณส่งกลับ
+            img.alt = "QR PromptPay";
+            el.appendChild(img);
+          } catch (err) {
+            console.error("QR error:", err);
+            el.innerHTML = `<span class="text-red-500">❌ ไม่สามารถติดต่อเซิร์ฟเวอร์</span>`;
+          }
+        }
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>
