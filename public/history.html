@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ประวัติการทำรายการ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 sm:p-6">
+  <div class="container mx-auto">
+    <a href="/" class="text-blue-600 underline block mb-4">← กลับหน้าแรก</a>
+    <h1 class="text-2xl font-bold text-center mb-6">📝 ประวัติรายการที่ยืนยันแล้ว</h1>
+
+    <div id="history" class="space-y-4 max-w-3xl mx-auto text-gray-800 px-2"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50">
+    <div class="bg-white px-6 py-4 rounded-lg shadow-lg text-center">
+      <p class="text-lg font-semibold">กำลังโหลดข้อมูล...</p>
+    </div>
+  </div>
+
+  <script>
+    function showLoading() {
+      document.getElementById("loading").classList.remove("hidden");
+    }
+
+    function hideLoading() {
+      document.getElementById("loading").classList.add("hidden");
+    }
+
+    async function loadHistory() {
+      showLoading();
+      try {
+        const res = await fetch("/api/list"); // เปลี่ยนเป็น /api/history หากแยก endpoint
+        const data = await res.json();
+        const container = document.getElementById("history");
+
+        const confirmed = data.filter(item => item.is_verify === true && item.confirm_slip === true);
+
+        if (confirmed.length === 0) {
+          container.innerHTML = `<p class="text-center text-gray-500">ยังไม่มีรายการยืนยัน</p>`;
+        } else {
+          confirmed.forEach((item, index) => {
+            const div = document.createElement("div");
+            div.className = "bg-white p-4 shadow rounded";
+
+            div.innerHTML = `
+              <p><strong>หัวข้อ:</strong> ${item.title}</p>
+              <p><strong>ชื่อเจ้าหนี้:</strong> ${item.creditor}</p>
+              <p><strong>ชื่อคนที่ยืม:</strong> ${item.payer}</p>
+              <p><strong>รายละเอียด:</strong> ${item.description}</p>
+              <p><strong>จำนวนเงิน:</strong> ${item.amount} บาท</p>
+              <p><strong>เบอร์ PromptPay:</strong> ${item.phone_number}</p>
+              ${item.slip_url ? `<p class="mt-2"><strong>สลิป:</strong><br><img src="${item.slip_url}" class="w-full max-w-xs border rounded mt-2" /></p>` : `<p class="text-red-500">❌ ไม่พบสลิป</p>`}
+              <p class="text-green-600 mt-2 font-semibold">✅ ยืนยันแล้ว</p>
+            `;
+            container.appendChild(div);
+          });
+        }
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        console.error(err);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

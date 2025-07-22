@@ -12,6 +12,7 @@
 <body class="bg-gray-100 min-h-screen p-4 sm:p-6">
   <div class="container mx-auto">
     <a href="/confirm.html" class="text-blue-600 underline block mb-2">📥 รายการรอยืนยัน</a>
+    <a href="/history.html" class="text-blue-600 underline block mb-2">📥 ประวัติการทำรายการ</a>
 
     <h1 class="text-2xl font-bold text-center mb-6">รายการที่สร้างไว้</h1>
 
@@ -60,7 +61,7 @@
               div.id = index;
 
               div.innerHTML = `
-                  <p><strong>หัวข้อ:</strong> ${item.title}</p>
+                  <p><strong>รายการ:</strong> ${item.title}</p>
                   <p><strong>ชื่อเจ้าหนี้:</strong> ${item.creditor}</p>
                   <p><strong>ชื่อคนที่ยืม:</strong> ${item.payer}</p>
                   <p><strong>รายละเอียด:</strong> ${item.description}</p>
@@ -111,6 +112,7 @@
 
         const result = await res.json();
         globalData[index].slip_url = result.slip_url;
+        console.log(result.slip_url)
 
         el.innerHTML = `<img src="${result.slip_url}" class="w-full max-w-xs border rounded mt-2" alt="slip" />`;
       } catch (err) {

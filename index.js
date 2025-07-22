@@ -66,59 +66,67 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ✅ POST /api/upload-slip: อัปโหลดสลิปแล้วเก็บ URL ลง Grist
+
+
+const GITHUB_API = "https://api.github.com";
+
 app.post("/api/upload-slip", upload.single("slip"), async (req, res) => {
   const { id: uuid } = req.body;
-
-  console.log(uuid)
-
   const filename = req.file.filename;
-  const slip_url = `/uploads/${filename}`; // relative path
-
-  
+  const localPath = req.file.path;
+  const slipPathInRepo = `${process.env.GITHUB_UPLOAD_DIR}/${filename}`; // e.g. public/uploads/xxx.png
 
   try {
+    // 🔁 อ่านไฟล์แล้วแปลง base64
+    const fileBuffer = fs.readFileSync(localPath);
+    const base64Content = fileBuffer.toString('base64');
 
-    const response = await axios.get(GRIST_API_URL, {
+    // 📤 อัปโหลดขึ้น GitHub
+    const uploadUrl = `${GITHUB_API}/repos/${process.env.GITHUB_REPO}/contents/${slipPathInRepo}`;
+    const commitMessage = `upload slip ${filename}`;
+
+    await axios.put(uploadUrl, {
+      message: commitMessage,
+      content: base64Content,
+      branch: process.env.GITHUB_BRANCH,
+    }, {
       headers: {
-        Authorization: `Bearer ${GRIST_API_KEY}`,
-      },
+        Authorization: `token ${process.env.GITHUB_TOKEN}`,
+        "User-Agent": "upload-script"
+      }
     });
 
-    // 2. หา row ที่มี uuid ตรงกัน
-    const matched = response.data.records.find(
-      (r) => r.fields.uuid === uuid
-    );
+    // ✅ อัปเดต Grist ด้วย Raw GitHub URL
+    const slip_url = `https://raw.githubusercontent.com/${process.env.GITHUB_REPO}/${process.env.GITHUB_BRANCH}/${slipPathInRepo}`;
 
-    if (!matched) {
-      return res.status(404).json({ error: "ไม่พบ uuid ที่ระบุ" });
-    }
+    // ... (ส่วนเชื่อม GRIST ตามเดิม)
+    const response = await axios.get(GRIST_API_URL, {
+      headers: { Authorization: `Bearer ${GRIST_API_KEY}` },
+    });
+
+    const matched = response.data.records.find((r) => r.fields.uuid === uuid);
+    if (!matched) return res.status(404).json({ error: "ไม่พบ uuid ที่ระบุ" });
 
     const gristRowId = matched.id;
 
-    await axios.patch(
-      GRIST_API_URL,
-      {
-        records: [
-          {
-            id: gristRowId,
-            fields: {
-              slip_url,
-              slip_at: Math.floor(Date.now() / 1000),
-            },
+    await axios.patch(GRIST_API_URL, {
+      records: [
+        {
+          id: gristRowId,
+          fields: {
+            slip_url,
+            slip_at: Math.floor(Date.now() / 1000),
           },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${GRIST_API_KEY}`,
         },
-      }
-    );
+      ],
+    }, {
+      headers: { Authorization: `Bearer ${GRIST_API_KEY}` },
+    });
 
     res.json({ slip_url });
   } catch (err) {
     console.error("UPLOAD ERROR:", err.response?.data || err.message);
-    res.status(500).json({ error: "ไม่สามารถอัปโหลดสลิปได้." });
+    res.status(500).json({ error: "ไม่สามารถอัปโหลดสลิปขึ้น GitHub ได้." });
   }
 });
 
